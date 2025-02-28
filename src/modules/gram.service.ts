@@ -36,7 +36,8 @@ export class GramService {
           Logger.error(err.message, err);
         },
       });
-      this.stringSession.save();
+      const session = this.stringSession.save();
+      Logger.info(`Session: ${session}`);
       Logger.info("Telegram client started");
     } catch (err) {
       if (err instanceof Error) {
