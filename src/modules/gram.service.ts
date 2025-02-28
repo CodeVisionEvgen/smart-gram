@@ -1,10 +1,10 @@
-import { Api, TelegramClient } from "telegram";
-import { StringSession } from "telegram/sessions";
+import { TelegramClient, Api } from "telegram-timeout-fix";
+import { StringSession } from "telegram-timeout-fix/sessions";
 import { Config } from "../utils/env.util";
 import { Logger } from "../utils/logger.util";
 //@ts-expect-error
 import * as input from "input";
-import { NewMessage, NewMessageEvent } from "telegram/events";
+import { NewMessage, NewMessageEvent } from "telegram-timeout-fix/events";
 import { Metadata } from "../types/gram.types";
 
 export class GramService {

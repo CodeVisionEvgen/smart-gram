@@ -1,4 +1,4 @@
-import { NewMessageEvent } from "telegram/events";
+import { NewMessageEvent } from "telegram-timeout-fix/events";
 import { GramService } from "./gram.service";
 import { AiService } from "./ai.service";
 import { StackService } from "./stack.service";

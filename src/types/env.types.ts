@@ -5,4 +5,5 @@ export type EnvKeysType =
   | "TELEGRAM_API_ID"
   | "TELEGRAM_PHONE"
   | "TELEGRAM_PASS"
-  | "GEMINI_KEY";
+  | "GEMINI_KEY"
+  | "PING_PORT";
