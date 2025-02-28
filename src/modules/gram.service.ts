@@ -1,5 +1,5 @@
 import { Api, TelegramClient } from "telegram";
-import { StoreSession } from "telegram/sessions";
+import { StringSession } from "telegram/sessions";
 import { Config } from "../utils/env.util";
 import { Logger } from "../utils/logger.util";
 //@ts-expect-error
@@ -9,7 +9,7 @@ import { Metadata } from "../types/gram.types";
 
 export class GramService {
   static MAX_CONTENT_LENGTH = 4096;
-  private stringSession = new StoreSession(
+  private stringSession = new StringSession(
     String(Config.get("TELEGRAM_SESSION"))
   );
   private apiHash = String(Config.get("TELEGRAM_API_HASH"));
@@ -36,6 +36,7 @@ export class GramService {
           Logger.error(err.message, err);
         },
       });
+      this.stringSession.save();
       Logger.info("Telegram client started");
     } catch (err) {
       if (err instanceof Error) {
