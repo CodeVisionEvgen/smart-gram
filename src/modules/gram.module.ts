@@ -50,28 +50,27 @@ export class GramModule {
     if (!replyMsg?.media) return;
 
     const { media } = replyMsg;
-    const uuid = crypto.randomUUID();
     const buffer = await client.downloadMedia(media);
     if (!buffer) return;
     try {
-      const filePath = await this.fsService.writeFile(uuid + ".ogg", buffer);
-      const file = await this.aiService.uploadFile(filePath);
-
       const response = await this.aiService.askGeminiAboutFile({
-        fileUri: file.file.uri,
+        data: buffer.toString("base64"),
         mimeType: "audio/ogg",
       });
 
-      await this.fsService.deleteFile(filePath);
-      await this.aiService.deleteFile(file.file.uri);
-
       await client.editMessage(chat, {
         text:
-          "Транскрипція голосового повідомлення:\n" + response.response.text(),
+          "Транскрипція голосового повідомлення:\n" +
+          `<blockquote>${response.response.text()}</blockquote>`,
         message: event.message.id,
+        parseMode: "html",
       });
     } catch (err) {
       Logger.error(err);
+      await client.editMessage(chat, {
+        text: "Сталася помилка при транскрипції",
+        message: event.message.id,
+      });
       await client.invoke(
         new this.gramService.Api.messages.SendReaction({
           msgId: replyMsg?.id,

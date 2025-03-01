@@ -30,23 +30,18 @@ export class AiService {
     });
   }
 
-  uploadFile(path: string) {
-    return this.FileManager.uploadFile(path, {
-      mimeType: "audio/ogg",
-    });
-  }
-
   askGemini(prompt: string, history: Content[]) {
     return this.getChat(history).sendMessage(prompt);
   }
-  deleteFile(path: string) {
-    return this.FileManager.deleteFile(path);
-  }
-  askGeminiAboutFile(file: FileData) {
+
+  askGeminiAboutFile({ data, mimeType }: { data: string; mimeType: string }) {
     return this.GenerativeModel.generateContent([
       "Transcribe this audio file.",
       {
-        fileData: file,
+        inlineData: {
+          data,
+          mimeType,
+        },
       },
     ]);
   }
