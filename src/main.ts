@@ -1,4 +1,5 @@
 import { START_APPLICATION_LOG } from "./constants/logs.constants";
+import { FsModule } from "./modules/fs.module";
 import { GramModule } from "./modules/gram.module";
 import { PingModule } from "./modules/ping.module";
 import { Config, EnableConfig } from "./utils/env.util";
@@ -9,7 +10,7 @@ async function MainProcess() {
   const isDev = Config.get("NODE_ENV") == "development";
   Logger.info(START_APPLICATION_LOG(isDev));
 
-  const modules = [new GramModule(), new PingModule()];
+  const modules = [new GramModule(), new PingModule(), new FsModule()];
 
   for (const module of modules) {
     await module.onModuleInit();

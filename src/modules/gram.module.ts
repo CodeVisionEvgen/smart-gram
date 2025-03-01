@@ -3,13 +3,17 @@ import { GramService } from "./gram.service";
 import { AiService } from "./ai.service";
 import { StackService } from "./stack.service";
 import { Metadata } from "../types/gram.types";
+import { FsService } from "./fs.service";
+import * as crypto from "crypto";
 import * as cowsay from "cowsay";
+import { Logger } from "../utils/logger.util";
 
 export class GramModule {
   onMessageHandlers: ((...params: any) => void | Promise<void>)[] = [];
   gramService = new GramService();
   stackService = new StackService();
   aiService = new AiService();
+  fsService = new FsService();
   async onModuleInit() {
     await this.gramService.start();
 
@@ -17,6 +21,8 @@ export class GramModule {
       this.aiResponse,
       this.gradientHeart,
       this.moo,
+      this.linearHearts,
+      this.speechToText,
     ]);
     this.gramService.onMessage(async (event, metadata) => {
       await Promise.all(
@@ -25,6 +31,59 @@ export class GramModule {
     });
   }
 
+  private speechToText = async (event: NewMessageEvent, metadata: Metadata) => {
+    const client = await this.gramService.getClient();
+    const { senderItsMe, chat, senderId } = metadata;
+
+    if (!chat || !senderItsMe || !senderId) return;
+
+    const { message: text } = event.message;
+    if (
+      !(
+        text.toLowerCase().startsWith("text") ||
+        text.toLowerCase().startsWith("Text")
+      )
+    )
+      return;
+
+    const replyMsg = await event.message.getReplyMessage();
+    if (!replyMsg?.media) return;
+
+    const { media } = replyMsg;
+    const uuid = crypto.randomUUID();
+    const buffer = await client.downloadMedia(media);
+    if (!buffer) return;
+    try {
+      const filePath = await this.fsService.writeFile(uuid + ".ogg", buffer);
+      const file = await this.aiService.uploadFile(filePath);
+
+      const response = await this.aiService.askGeminiAboutFile({
+        fileUri: file.file.uri,
+        mimeType: "audio/ogg",
+      });
+
+      await this.fsService.deleteFile(filePath);
+      await this.aiService.deleteFile(file.file.uri);
+
+      await client.editMessage(chat, {
+        text:
+          "Транскрипція голосового повідомлення:\n" + response.response.text(),
+        message: event.message.id,
+      });
+    } catch (err) {
+      Logger.error(err);
+      await client.invoke(
+        new this.gramService.Api.messages.SendReaction({
+          msgId: replyMsg?.id,
+          peer: chat,
+          reaction: [
+            new this.gramService.Api.ReactionEmoji({ emoticon: "🙊" }),
+          ],
+        })
+      );
+    }
+  };
+
   private moo = async (event: NewMessageEvent, metadata: Metadata) => {
     const client = await this.gramService.getClient();
     const { senderItsMe, chat, senderId } = metadata;
@@ -32,15 +91,59 @@ export class GramModule {
     if (!chat || !senderItsMe || !senderId) return;
 
     const { message: text } = event.message;
-    if (!text.toLowerCase().startsWith("moo")) return;
+    if (
+      !(
+        text.toLowerCase().startsWith("moo") ||
+        text.toLowerCase().startsWith("Moo")
+      )
+    )
+      return;
 
-    const say = cowsay.say({ text: text.toLowerCase().split("moo")[1] });
+    const say = cowsay.say({ text: text.split(/moo/i)[1] });
 
     await client.editMessage(chat, {
       message: event.message.id,
       text: "Корова каже:\n" + "<pre>" + say + "</pre>",
       parseMode: "html",
     });
+  };
+
+  private linearHearts = async (event: NewMessageEvent, metadata: Metadata) => {
+    const hearts = ["🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "❤️"];
+    const { senderItsMe, chat, senderId } = metadata;
+    const client = await this.gramService.getClient();
+
+    if (!chat || !senderItsMe || !senderId) return;
+
+    const { message: text } = event.message;
+    if (!text.startsWith(">❤️")) return;
+    let count = 0;
+    while (count < 4) {
+      count++;
+      await new Promise((res) => setTimeout(res, 400));
+
+      let textHearts = Array.from(
+        {
+          length: 8,
+        },
+        () => "❤️"
+      );
+
+      await client.editMessage(chat, {
+        message: event.message.id,
+        text: textHearts.join(""),
+      });
+
+      for (let i = 0; i < textHearts.length; i++) {
+        textHearts[i] = hearts[i];
+        await new Promise((res) => setTimeout(res, 300));
+
+        await client.editMessage(chat, {
+          message: event.message.id,
+          text: textHearts.join(""),
+        });
+      }
+    }
   };
 
   private gradientHeart = async (
@@ -54,13 +157,13 @@ export class GramModule {
     if (!chat || !senderItsMe || !senderId) return;
 
     const { message: text } = event.message;
-    if (!text.includes("❤️")) return;
+    if (!text.startsWith("❤️")) return;
 
     let count = 0;
     while (count < 10) {
       count++;
       for (const heart of hearts) {
-        await new Promise((res) => setTimeout(res, 200));
+        await new Promise((res) => setTimeout(res, 300));
         try {
           await client.editMessage(chat, {
             message: event.message.id,
