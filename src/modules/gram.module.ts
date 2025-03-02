@@ -17,6 +17,10 @@ export class GramModule {
   async onModuleInit() {
     await this.gramService.start();
 
+    setInterval(async () => {
+      await this.pingSession();
+    }, 60 * 1000 * 30);
+
     this.onMessageHandlers = this.onMessageHandlers.concat([
       this.aiResponse,
       this.gradientHeart,
@@ -30,6 +34,15 @@ export class GramModule {
       );
     });
   }
+
+  private pingSession = async () => {
+    const client = await this.gramService.getClient();
+    const me = await client.getMe();
+    const message = await client.sendMessage(me.id, { message: "ping" });
+    Logger.info("Ping Session");
+    await new Promise((res) => setTimeout(res, 2000));
+    await message.delete();
+  };
 
   private speechToText = async (event: NewMessageEvent, metadata: Metadata) => {
     const client = await this.gramService.getClient();
