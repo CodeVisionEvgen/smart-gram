@@ -1,0 +1,35 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      REPO: 'CodeVisionEvgen/smart-gram.git'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: SSH Connect and Deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no virt132217@balticstation.eu << 'EOF'
+          cd /data05/virt132217/domeenid/www.balticstation.eu/local/wp || exit 1
+          git remote add origin https://${{secrets.AUTH_TOKEN}}@github.com/${{ env.REPO }} || exit 1
+          git fetch origin || exit 1
+          git reset --hard origin/master || exit 1
+          git remote remove origin || exit 1
+          npm i || exit 1
+          npm run build || exit 1
+          pm2 restart wp || exit 1
+          EOF
